@@ -1,89 +1,69 @@
 # {{ spec.info.title }}
-
 {{ spec.info.description }}
-
-# Base URL
-
-
-| URL | Description |
-|-----|-------------|
-{% for server in spec.servers -%}
-| {{ server.url }} | {{ server.description }} |
-{% endfor %}
-
-{% if spec.components and spec.components.securitySchemes -%}
-
-# Authentication
-
-{% with root = spec.components -%}
-{% include './_security_scheme.md.j2' -%}
-{% endwith -%}
-{% endif -%}
-
-# APIs
-
-{% for path, methods in spec.paths.items() -%}
-
-{% for method, operation in methods.items() -%}
-## {{ method.upper() }} {{ path }}
-
-{{ operation.summary }}
-
-{% if operation.description and operation.description != operation.summary -%}
-{{ operation.description }}
-{% endif %}
-
-{% if operation.parameters -%}
-
-### Parameters
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-{% for param in operation.parameters -%}
-{% set param_obj = ref_to_schema(param) -%}
-| {{ param_obj.name }} | {{ param_obj.schema.type }} | {{ param_obj.required }} | {{ param_obj.description }} |
-{% endfor -%}
-{% endif %}
-
-{% if operation.requestBody -%}
-
-### Request Body
-
-{% set content = operation.requestBody.content -%}
-{% include './_content.md.j2' %}
-
-{% endif -%}
-
-### Responses
-
-{% for status_code, response in operation.responses.items() -%}
-
-#### {{ status_code }}
-
-{% if response.description %}
-{{ response.description }}
-{% endif %}
-
-{% set content = response.content -%}
-{% include './_content.md.j2' %}
-
-{% endfor -%}
-{% endfor -%}
-{% endfor -%}
-
-{% if spec.components and spec.components.schemas -%}
-
+**Version:** {{ spec.info.version }}
+{% if spec.info.contact %}> **Contact:** {{ spec.info.contact.name }} <{{ spec.info.contact.email }}>{% endif %}
+{% if spec.info.license %}> **License:** {{ spec.info.license.name }}{% endif %}
+{% if spec.info.termsOfService %}> **Terms:** {{ spec.info.termsOfService }}{% endif %}
+{% if spec.servers %}## Servers
+| URL | Desc |
+|-----|------|
+{% for s in spec.servers %}{{ s.url }}|{{ s.description or '' }}|
+{% endfor %}{% endif %}
+{% if spec.externalDocs %}> **Docs:** {{ spec.externalDocs.url }}{% endif %}
+{% if spec.security %}## Security
+{% for sec in spec.security %}- {{ sec.keys()|list|first }}: {{ sec.values()|list|first|join(', ') }}
+{% endfor %}{% endif %}
+{% if spec.components.securitySchemes %}## Schemes
+{% include './_security_scheme.md.j2' %}{% endif %}
+{% if spec.tags %}## Tags
+{% for t in spec.tags %}### {{ t.name }}
+{{ t.description or '' }}{% endfor %}{% endif %}
+# Endpoints
+{% for p, m in spec.paths.items() %}## {{ p }}
+{% for meth, op in m.items() %}### {{ meth|upper }}
+**ID:** {{ op.operationId }}{% if op.summary %} **Sum:** {{ op.summary }}{% endif %}{% if op.description %} **Desc:** {{ op.description }}{% endif %}{% if op.deprecated %}**Deprecated**{% endif %}{% if op.tags %}**Tags:** {{ op.tags|join(', ') }}{% endif %}{% if op.externalDocs %}**Docs:** {{ op.externalDocs.url }}{% endif %}{% if op.security %}**Sec:** {% for s in op.security %}{{ s.keys()|list|first }}: {{ s.values()|list|first|join(', ') }}{% endfor %}{% endif %}
+{% if op.parameters %}#### Params
+| Name | In | Type | Req | Desc | Ex |
+|------|----|------|-----|------|----|
+{% for pr in op.parameters %}{{ pr.name }}|{{ pr.in }}|{{ pr.schema.type or 'obj' }}|{{ 'Y' if pr.required else 'N' }}|{{ pr.description or '' }}|{{ pr.example or '' }}|
+{% endfor %}{% endif %}
+{% if op.requestBody %}#### Body
+{% include './_content.md.j2' %}{% endif %}
+#### Responses
+{% for sc, r in op.responses.items() %}##### {{ sc }} - {{ r.description }}
+{% if r.headers %}**Headers:** {% for h in r.headers %}{{ h }}: {{ r.headers[h].schema.type or 'str' }} - {{ r.headers[h].description or '' }}{% endfor %}{% endif %}
+{% include './_content.md.j2' %}{% if r.links %}**Links:** {% for l in r.links %}{{ l }}: {{ r.links[l].operationId }}{% endfor %}{% endif %}{% endfor %}
+{% endfor %}{% endfor %}
+{% if spec.webhooks %}# Webhooks
+{% for w, wh in spec.webhooks.items() %}## {{ w }}
+{% for m, o in wh.items() %}### {{ m|upper }}
+**Sum:** {{ o.summary or '' }}{% if o.description %}**Desc:** {{ o.description }}{% endif %}{% if o.security %}**Sec:** {% for s in o.security %}{{ s.keys()|list|first }}: {{ s.values()|list|first|join(', ') }}{% endfor %}{% endif %}{% if o.requestBody %}#### Body
+{% include './_content.md.j2' %}{% endif %}#### Responses
+{% for sc, r in o.responses.items() %}##### {{ sc }} - {{ r.description }}
+{% include './_content.md.j2' %}{% endfor %}{% endfor %}{% endfor %}{% endif %}
 # Components
-
-{% for schema_name, schema in spec.components.schemas.items() %}
-
-## {{ schema_name }}
-
-{% if schema.description %}
-{{ schema.description }}
-{% endif %}
-
-{% include './_object_schema.md.j2' -%}
-{% endfor -%}
-
-{% endif -%}
+{% if spec.components.schemas %}## Schemas
+{% for n, s in spec.components.schemas.items() %}### {{ n }}
+{% if s.title %}**Title:** {{ s.title }}{% endif %}{% if s.description %}**Desc:** {{ s.description }}{% endif %}{% if s.type == 'object' %}#### Props
+| Name | Type | Req | Desc | Ex |
+|------|------|-----|------|----|
+{% for pn, p in s.properties.items() %}{{ pn }}|{{ p.type or 'obj' }}|{{ 'Y' if pn in (s.required or []) else 'N' }}|{{ p.description or '' }}|{{ p.example or '' }}|
+{% endfor %}{% endif %}{% if s.enum %}**Enum:** {{ s.enum|join(', ') }}{% endif %}{% if s.oneOf %}**OneOf:** {% for sub in s.oneOf %}{{ sub|tojson }}{% endfor %}{% endif %}{% if s.allOf %}**AllOf:** {% for sub in s.allOf %}{{ sub|tojson }}{% endfor %}{% endif %}{% if s.anyOf %}**AnyOf:** {% for sub in s.anyOf %}{{ sub|tojson }}{% endfor %}{% endif %}{% if s.example %}**Ex:** {{ s.example|tojson(indent=0) }}{% endif %}{% endfor %}{% endif %}
+{% if spec.components.parameters %}## Params
+{% for n, p in spec.components.parameters.items() %}### {{ n }}
+- Name: {{ p.name }}, In: {{ p.in }}, Req: {{ p.required }}, Schema: {{ p.schema|tojson }}, Desc: {{ p.description }}, Ex: {{ p.example }}{% endfor %}{% endif %}
+{% if spec.components.responses %}## Responses
+{% for n, r in spec.components.responses.items() %}### {{ n }}
+{{ r.description }}{% if r.content %}**Content:** {% include './_content.md.j2' %}{% endif %}{% endfor %}{% endif %}
+{% if spec.components.examples %}## Examples
+{% for n, e in spec.components.examples.items() %}### {{ n }}
+**Val:** {{ e.value|tojson(indent=0) }}{% endfor %}{% endif %}
+{% if spec.components.headers %}## Headers
+{% for n, h in spec.components.headers.items() %}### {{ n }}
+- Desc: {{ h.description }}, Schema: {{ h.schema|tojson }}{% endfor %}{% endif %}
+{% if spec.components.links %}## Links
+{% for n, l in spec.components.links.items() %}### {{ n }}
+- OpID: {{ l.operationId }}, Params: {{ l.parameters|tojson }}, Desc: {{ l.description }}{% endfor %}{% endif %}
+{% if spec.components.callbacks %}## Callbacks
+{% for n, c in spec.components.callbacks.items() %}### {{ n }}
+{{ c|tojson }}{% endfor %}{% endif %}

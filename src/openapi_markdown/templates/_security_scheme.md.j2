@@ -1,10 +1,20 @@
+{% for scheme_name, scheme in spec.components.securitySchemes.items() -%}
+### {{ scheme_name }}
 
-{% if root.securitySchemes %}
-## Security Schemes
+- **Type:** {{ scheme.type }}
+{% if scheme.description %}- **Description:** {{ scheme.description }}{% endif %}
+{% if scheme.scheme %}- **Scheme:** {{ scheme.scheme }}{% endif %}
+{% if scheme.bearerFormat %}- **Bearer Format:** {{ scheme.bearerFormat }}{% endif %}
+{% if scheme.flows %}- **Flows:**
+{% for flow_name, flow in scheme.flows.items() %}
+  - **{{ flow_name }}:**
+    {% if flow.authorizationUrl %}- **Authorization URL:** {{ flow.authorizationUrl }}{% endif %}
+    {% if flow.tokenUrl %}- **Token URL:** {{ flow.tokenUrl }}{% endif %}
+    {% if flow.refreshUrl %}- **Refresh URL:** {{ flow.refreshUrl }}{% endif %}
+    {% if flow.scopes %}- **Scopes:** {{ flow.scopes | tojson(indent=0) }}{% endif %}
+{% endfor %}{% endif %}
+{% if scheme.in %}- **In:** {{ scheme.in }}{% endif %}
+{% if scheme.name %}- **Name:** {{ scheme.name }}{% endif %}
+{% if scheme.openIdConnectUrl %}- **OpenID Connect URL:** {{ scheme.openIdConnectUrl }}{% endif %}
 
-| Name              | Type              | Description              | Scheme              | Bearer Format             |
-|-------------------|-------------------|--------------------------|---------------------|---------------------------|
-{% for scheme_name, scheme in root.securitySchemes.items() -%}
-| {{ scheme_name }} | {{ scheme.type }} | {{ scheme.description }} | {{ scheme.scheme }} | {{ scheme.bearerFormat }} |
 {% endfor %}
-{% endif %}

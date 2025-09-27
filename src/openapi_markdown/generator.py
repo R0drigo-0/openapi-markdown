@@ -52,19 +52,17 @@ def ref_to_schema(schema, spec_data):
 
 
 def to_markdown(api_file, output_file, templates_dir='templates', options={}):
-    # Load the OpenAPI 3.0 specification file in either JSON or YAML format
-    with open(api_file) as f:
-        spec_data = json.load(f) if api_file.endswith(".json") else yaml.safe_load(f)
-    # Resolve all references in the spec data
-    # spec_data = ref_to_schema(spec_data, spec_data)
-    # filter spec_data.paths if filter_paths option is provided
+    with open(api_file, encoding='utf-8') as f:
+        if api_file.endswith(('.yaml', '.yml')):
+            spec_data = yaml.safe_load(f)
+        else:
+            spec_data = json.load(f)
     if 'filter_paths' in options and options['filter_paths']:
         spec_data['paths'] = {
             k: v for k, v in spec_data['paths'].items()
             if any(k.startswith(prefix) for prefix in options['filter_paths'])
         }
     spec = Spec.from_dict(spec_data)
-    # Load the Jinja2 template file
     if os.path.exists(templates_dir):
         env = Environment(loader=FileSystemLoader(templates_dir))
     else:
@@ -79,5 +77,5 @@ def to_markdown(api_file, output_file, templates_dir='templates', options={}):
                         ref_to_param=lambda ref: ref_to_param(ref, spec_data),
                         ref_to_schema=lambda ref: ref_to_schema(ref, spec_data))
     )
-    with open(output_file, "w") as f:
+    with open(output_file, "w", encoding='utf-8') as f:
         f.write(rendered_template)

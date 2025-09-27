@@ -1,18 +1,36 @@
-{% if content -%}
+{% if content and content is mapping %}
+{% for media_type, media in content.items() -%}
+### {{ media_type }}
 
-{% for content_type, item in content.items() -%}
-
-{% set schema = item.schema -%}
-
-{{ schema | ref_to_link }}
-
-{% if schema %}
-{% include './_object_schema.md.j2' %}
+{% if media.schema -%}
+**Schema:**
+```json
+{{ media.schema | tojson(indent=2) }}
+```
 {% endif %}
 
-{% with root = item -%}
-{% include './_example.md.j2' -%}
-{% endwith -%}
-{% endfor -%}
+{% if media.example -%}
+**Example:**
+```json
+{{ media.example | tojson(indent=2) }}
+```
+{% endif %}
 
-{% endif -%}
+{% if media.examples -%}
+**Examples:**
+{% for ex_name, ex in media.examples.items() -%}
+- **{{ ex_name }}:** {{ ex.summary or 'No summary' }}
+```json
+{{ ex.value | tojson(indent=2) }}
+```
+{% endfor %}
+{% endif %}
+
+{% if media.encoding -%}
+**Encoding:**
+{% for enc_name, enc in media.encoding.items() -%}
+- **{{ enc_name }}:** {{ enc | tojson }}
+{% endfor %}
+{% endif %}
+{% endfor %}
+{% endif %}

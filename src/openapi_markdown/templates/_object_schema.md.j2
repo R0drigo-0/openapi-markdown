@@ -1,7 +1,45 @@
-{% if schema.properties -%}
-| Field | Type | Description |
-|-------|------|-------------|
-{% for property_name, property in schema.properties.items() -%}
-| {{ property_name }} | {{ property.type }} | {{ property.description if property.description else '' }} |
-{% endfor -%}
-{% endif -%}
+{% if schema.type == 'object' -%}
+**Properties:**
+
+| Property | Type | Required | Description | Example |
+|----------|------|----------|-------------|---------|
+{% for prop_name, prop in schema.properties.items() -%}
+| {{ prop_name }} | {{ prop.type or 'object' }} | {{ 'Yes' if prop_name in (schema.required or []) else 'No' }} | {{ prop.description or '' }} | {{ prop.example or '' }} |
+{% endfor %}
+
+{% if schema.additionalProperties -%}
+**Additional Properties:** Allowed
+{% endif %}
+{% endif %}
+
+{% if schema.enum -%}
+**Enum Values:** {{ schema.enum | join(', ') }}
+{% endif %}
+
+{% if schema.oneOf -%}
+**One Of:**
+{% for sub_schema in schema.oneOf -%}
+- {{ sub_schema | tojson }}
+{% endfor %}
+{% endif %}
+
+{% if schema.allOf -%}
+**All Of:**
+{% for sub_schema in schema.allOf -%}
+- {{ sub_schema | tojson }}
+{% endfor %}
+{% endif %}
+
+{% if schema.anyOf -%}
+**Any Of:**
+{% for sub_schema in schema.anyOf -%}
+- {{ sub_schema | tojson }}
+{% endfor %}
+{% endif %}
+
+{% if schema.example -%}
+**Example:**
+```json
+{{ schema.example | tojson(indent=2) }}
+```
+{% endif %}
